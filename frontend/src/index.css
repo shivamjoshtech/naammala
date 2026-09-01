@@ -1,0 +1,70 @@
+:root {
+  /* Light, calm, temple-morning palette */
+  --bg: #FBF8F2;
+  --surface: #FFFFFF;
+  --ink: #2B2620;
+  --ink-soft: #6B6255;
+  --accent: #B5623A;
+  --border: #E7DFCF;
+
+  --font-display: "Georgia", serif;
+  --font-body: system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  color-scheme: light;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  /* Fluid base size: comfortable on phones, tablets, and desktops alike */
+  font-size: clamp(15px, 1vw + 12px, 18px);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: normal;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
+/* Every tappable control gets a comfortable minimum touch target (accessibility + mobile usability) */
+button, input, select {
+  font-family: inherit;
+  min-height: 44px;
+}
+
+button {
+  touch-action: manipulation;
+}
+
+img, canvas {
+  max-width: 100%;
+}
+
+/* Respect users who've asked for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Small phones — tighten padding/spacing further */
+@media (max-width: 380px) {
+  html {
+    font-size: 14px;
+  }
+}
