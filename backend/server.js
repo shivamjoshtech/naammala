@@ -1,6 +1,7 @@
 // NaamMala — Backend Entry Point
-// Runs standalone locally (node server.js) AND as a Vercel serverless function
-// (via api/index.js, which imports the exported `app` below).
+// Runs as a normal, always-listening Express server — both locally
+// (node server.js) and on Vercel, where the "backend" service in
+// vercel.json runs this as a persistent Web Service.
 
 import "dotenv/config";
 import express from "express";
@@ -101,12 +102,11 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Something went wrong on the server" });
 });
 
-// Only listen on a port for local development — on Vercel, the platform
-// invokes the exported app directly per-request, so app.listen never runs there.
-if (!process.env.VERCEL) {
-  app.listen(PORT, () => {
-    console.log(`🪔 NaamMala backend running on http://localhost:${PORT}`);
-  });
-}
+// Vercel's "Web Service" model runs this as a normal, persistently-listening
+// server (not a one-request serverless function), so we always listen —
+// both locally and on Vercel.
+app.listen(PORT, () => {
+  console.log(`🪔 NaamMala backend running on http://localhost:${PORT}`);
+});
 
 export default app;
