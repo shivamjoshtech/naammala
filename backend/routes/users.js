@@ -12,8 +12,9 @@ const router = express.Router();
 const USERNAME_MAX_LENGTH = 40;
 const PASSWORD_MIN_LENGTH = 4;
 const PASSWORD_MAX_LENGTH = 100;
-// Letters (any language), numbers, spaces, and basic punctuation only — blocks script/HTML injection attempts
-const USERNAME_PATTERN = /^[\p{L}\p{N}\s.'-]+$/u;
+// Letters (any language), numbers, and basic punctuation only — no spaces,
+// and blocks script/HTML injection attempts
+const USERNAME_PATTERN = /^[\p{L}\p{N}.'-]+$/u;
 
 function isValidUsername(name) {
   return (
@@ -40,7 +41,7 @@ router.post("/login", async (req, res) => {
 
   if (!isValidUsername(username)) {
     return res.status(400).json({
-      error: `Name can only contain letters/numbers/spaces, up to ${USERNAME_MAX_LENGTH} characters`,
+      error: `Name can only contain letters/numbers (no spaces), up to ${USERNAME_MAX_LENGTH} characters`,
     });
   }
   if (!isValidPassword(password)) {
@@ -68,7 +69,7 @@ router.post("/login", async (req, res) => {
 
     const passwordMatches = await bcrypt.compare(password, user.password_hash);
     if (!passwordMatches) {
-      return res.status(401).json({ error: "Incorrect password" });
+      return res.status(409).json({ error: "This username is already taken" });
     }
 
     res.json({ user: { id: user.id, username: user.username, created_at: user.created_at } });

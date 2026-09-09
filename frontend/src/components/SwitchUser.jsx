@@ -6,6 +6,7 @@ export default function SwitchUser({ currentUser, onSelectUser, onClose }) {
   const [users, setUsers] = useState([]);
   const [selectedUsername, setSelectedUsername] = useState(null);
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -61,14 +62,25 @@ export default function SwitchUser({ currentUser, onSelectUser, onClose }) {
             <p style={styles.switchingTo}>
               Switching to <strong>{selectedUsername}</strong>
             </p>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-              style={styles.input}
-              autoFocus
-            />
+            <div style={styles.passwordWrapper}>
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
+                style={styles.passwordInput}
+                autoFocus
+              />
+              <button
+                type="button"
+                style={styles.eyeButton}
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                tabIndex={-1}
+              >
+                {showPassword ? "🙈" : "👁️"}
+              </button>
+            </div>
             {error && <p style={styles.error}>{error}</p>}
             <button type="submit" style={styles.saveButton} disabled={loading}>
               {loading ? "Checking..." : "Switch"}
@@ -170,6 +182,32 @@ const styles = {
     background: "var(--bg)",
     color: "var(--ink)",
     marginBottom: "0.75rem",
+  },
+  passwordWrapper: {
+    position: "relative",
+    display: "flex",
+    alignItems: "center",
+    marginBottom: "0.75rem",
+  },
+  passwordInput: {
+    width: "100%",
+    padding: "0.7rem 2.75rem 0.7rem 0.9rem",
+    fontSize: "1rem",
+    border: "1px solid var(--border)",
+    borderRadius: "8px",
+    background: "var(--bg)",
+    color: "var(--ink)",
+  },
+  eyeButton: {
+    position: "absolute",
+    right: "0.5rem",
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    fontSize: "1.1rem",
+    padding: "0.4rem",
+    minHeight: "auto",
+    lineHeight: 1,
   },
   saveButton: {
     width: "100%",
