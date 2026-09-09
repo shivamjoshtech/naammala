@@ -1,5 +1,11 @@
 # NaamMala — Naam Jaap Counter
 
+**Live app:** https://naammala.vercel.app/
+
+Created by **Shivam Joshi** · Contact: 7668624575
+
+*Jai Jai Sita Ram . Jai Shree Ram . Jai Shree Shyam* 🙏
+
 NaamMala is a simple, calming web app for counting your daily naam-jaap
 (chanting). Write your chosen name by hand on a touch pad, track your daily
 and total count, get an AI-generated reflection each day, and download a
@@ -281,3 +287,13 @@ For the frontend, Vite auto-reloads — just save the file. For the backend, sto
 
 **Still stuck?**
 Copy the exact error message you're seeing and share it — most issues are quick to fix once the exact error is visible.
+
+---
+
+## About
+
+**NaamMala** was created by **Shivam Joshi**.
+Contact: 7668624575
+Live app: https://naammala.vercel.app/
+
+*Jai Jai Sita Ram . Jai Shree Ram . Jai Shree Shyam* 🙏
