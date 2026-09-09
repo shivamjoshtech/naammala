@@ -1,7 +1,8 @@
 // NaamMala — User routes
-// Handles: register/login by username+password, list usernames (for switching)
+// Handles: register/login by username+password.
 // One username = one account. Password required so switching between
-// accounts on a shared device requires proving ownership.
+// accounts on a shared device requires proving ownership. There is no
+// endpoint that lists usernames — accounts are private.
 
 import express from "express";
 import bcrypt from "bcryptjs";
@@ -76,19 +77,6 @@ router.post("/login", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Login failed, please try again" });
-  }
-});
-
-// GET /api/users  → list all usernames (for the "switch user" screen) — never includes passwords
-router.get("/", async (req, res) => {
-  try {
-    const result = await sql`
-      SELECT id, username, created_at FROM users ORDER BY created_at ASC
-    `;
-    res.json({ users: result.rows });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Could not load users" });
   }
 });
 

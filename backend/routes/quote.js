@@ -1,6 +1,11 @@
 // NaamMala — Groq AI quote route
 // Handles: generate a short, real-time quote/line related to the user's chosen
 // naam, religion, and language, drawn from their character's stories.
+//
+// Without a GROQ_API_KEY, this falls back to a rotating set of calm, generic
+// lines (personalized with the user's own chosen naam) so the app still
+// works — but for genuinely varying, AI-written lines tailored to the god,
+// religion, and language the user picked, a real GROQ_API_KEY is required.
 
 import express from "express";
 import { sql } from "../db/database.js";
@@ -10,8 +15,21 @@ const router = express.Router();
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 const GROQ_MODEL = "llama-3.3-70b-versatile";
 
-const FALLBACK_QUOTE =
-  "Devotion grows with every name you take. May today's jaap bring you peace. 🙏";
+function fallbackQuotes(naam) {
+  const name = naam || "your chosen name";
+  return [
+    `Devotion grows with every name you take. May today's jaap of ${name} bring you peace. 🙏`,
+    `Each time you chant ${name}, a little more stillness enters your day. 🙏`,
+    `${name} is with you in every breath you take today. 🙏`,
+    `Let the sound of ${name} settle your mind, one jaap at a time. 🙏`,
+    `Faith is built one name at a time — today, that name is ${name}. 🙏`,
+  ];
+}
+
+function randomFallback(naam) {
+  const quotes = fallbackQuotes(naam);
+  return quotes[Math.floor(Math.random() * quotes.length)];
+}
 
 function buildPrompt(settings) {
   const naam = settings.typed_naam;
@@ -30,6 +48,7 @@ Write exactly ONE short line (max 25 words) that is either:
 Rules:
 - Reply in ${language} language/script only.
 - No preamble, no quotation marks, no explanation — output only the single line.
+- Make it feel fresh and different each time — vary the angle, wording, and which story or aspect you draw on.
 - Keep it respectful, warm, and universally appropriate.`;
 }
 
@@ -40,16 +59,16 @@ router.get("/:userId", async (req, res) => {
     return res.status(400).json({ error: "user id is invalid" });
   }
 
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) {
-    return res.json({ quote: FALLBACK_QUOTE, source: "fallback" });
-  }
-
   try {
     const result = await sql`SELECT * FROM settings WHERE user_id = ${userId}`;
     const settings = result.rows[0];
     if (!settings) {
       return res.status(404).json({ error: "Please set your name in Settings first" });
+    }
+
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) {
+      return res.json({ quote: randomFallback(settings.typed_naam), source: "fallback" });
     }
 
     const controller = new AbortController();
@@ -65,7 +84,7 @@ router.get("/:userId", async (req, res) => {
         model: GROQ_MODEL,
         messages: [{ role: "user", content: buildPrompt(settings) }],
         max_tokens: 80,
-        temperature: 0.9,
+        temperature: 1.0,
       }),
       signal: controller.signal,
     });
@@ -74,20 +93,20 @@ router.get("/:userId", async (req, res) => {
 
     if (!groqRes.ok) {
       console.error("Groq API error:", groqRes.status, await groqRes.text());
-      return res.json({ quote: FALLBACK_QUOTE, source: "fallback" });
+      return res.json({ quote: randomFallback(settings.typed_naam), source: "fallback" });
     }
 
     const data = await groqRes.json();
     const quote = data?.choices?.[0]?.message?.content?.trim();
 
     if (!quote) {
-      return res.json({ quote: FALLBACK_QUOTE, source: "fallback" });
+      return res.json({ quote: randomFallback(settings.typed_naam), source: "fallback" });
     }
 
     res.json({ quote, source: "groq" });
   } catch (err) {
     console.error(err);
-    res.json({ quote: FALLBACK_QUOTE, source: "fallback" });
+    res.json({ quote: randomFallback(), source: "fallback" });
   }
 });
 

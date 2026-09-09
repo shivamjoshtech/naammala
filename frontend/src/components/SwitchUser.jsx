@@ -1,31 +1,26 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-// Switching to another account requires that account's password —
-// this prevents anyone on a shared device from opening someone else's jaap data.
-export default function SwitchUser({ currentUser, onSelectUser, onClose }) {
-  const [users, setUsers] = useState([]);
-  const [selectedUsername, setSelectedUsername] = useState(null);
+// Shows only the currently signed-in user — never a list of everyone's
+// accounts (that would leak who else uses this app). To switch, the person
+// must know the target account's own username and password, exactly like
+// signing in fresh — this panel just saves them a trip through the full
+// login screen.
+export default function SwitchUser({ currentUser, onSelectUser, onLogout, onClose }) {
+  const [switching, setSwitching] = useState(false);
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/users")
-      .then((res) => res.json())
-      .then((data) => setUsers(data.users || []));
-  }, []);
-
-  const startSwitch = (username) => {
-    setSelectedUsername(username);
-    setPassword("");
-    setError("");
+  const handleUsernameChange = (e) => {
+    setUsername(e.target.value.replace(/\s/g, ""));
   };
 
-  const confirmSwitch = async (e) => {
+  const handleSwitch = async (e) => {
     e.preventDefault();
-    if (!password) {
-      setError("Please enter the password");
+    if (!username.trim() || !password) {
+      setError("Please enter both name and password");
       return;
     }
 
@@ -36,14 +31,14 @@ export default function SwitchUser({ currentUser, onSelectUser, onClose }) {
       const res = await fetch("/api/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: selectedUsername, password }),
+        body: JSON.stringify({ username: username.trim(), password }),
       });
       const data = await res.json();
 
       if (data.user) {
         onSelectUser(data.user);
       } else {
-        setError(data.error || "Incorrect password");
+        setError(data.error || "Could not switch account");
       }
     } catch {
       setError("Could not connect to the server");
@@ -55,13 +50,39 @@ export default function SwitchUser({ currentUser, onSelectUser, onClose }) {
   return (
     <div style={styles.overlay}>
       <div style={styles.panel}>
-        <h2 style={styles.heading}>Switch User</h2>
+        <h2 style={styles.heading}>Account</h2>
 
-        {selectedUsername ? (
-          <form onSubmit={confirmSwitch}>
-            <p style={styles.switchingTo}>
-              Switching to <strong>{selectedUsername}</strong>
+        {!switching ? (
+          <>
+            <p style={styles.signedInAs}>
+              Signed in as <strong>{currentUser.username}</strong>
             </p>
+
+            <button style={styles.actionButton} onClick={() => setSwitching(true)}>
+              Switch to Another Account
+            </button>
+            <button style={styles.logoutButton} onClick={onLogout}>
+              Log Out
+            </button>
+            <button style={styles.closeButton} onClick={onClose}>
+              Close
+            </button>
+          </>
+        ) : (
+          <form onSubmit={handleSwitch}>
+            <p style={styles.hint}>
+              Enter an existing account's name and password, or a new name and
+              password to create one.
+            </p>
+            <input
+              type="text"
+              value={username}
+              onChange={handleUsernameChange}
+              placeholder="Name (no spaces)"
+              style={styles.input}
+              autoFocus
+              autoComplete="username"
+            />
             <div style={styles.passwordWrapper}>
               <input
                 type={showPassword ? "text" : "password"}
@@ -69,7 +90,7 @@ export default function SwitchUser({ currentUser, onSelectUser, onClose }) {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
                 style={styles.passwordInput}
-                autoFocus
+                autoComplete="current-password"
               />
               <button
                 type="button"
@@ -82,38 +103,22 @@ export default function SwitchUser({ currentUser, onSelectUser, onClose }) {
               </button>
             </div>
             {error && <p style={styles.error}>{error}</p>}
-            <button type="submit" style={styles.saveButton} disabled={loading}>
-              {loading ? "Checking..." : "Switch"}
+            <button type="submit" style={styles.actionButton} disabled={loading}>
+              {loading ? "Please wait..." : "Continue"}
             </button>
             <button
               type="button"
               style={styles.closeButton}
-              onClick={() => setSelectedUsername(null)}
+              onClick={() => {
+                setSwitching(false);
+                setError("");
+                setUsername("");
+                setPassword("");
+              }}
             >
               Back
             </button>
           </form>
-        ) : (
-          <>
-            <div style={styles.list}>
-              {users.map((u) => (
-                <button
-                  key={u.id}
-                  onClick={() => startSwitch(u.username)}
-                  style={{
-                    ...styles.userItem,
-                    ...(currentUser?.id === u.id ? styles.userItemActive : {}),
-                  }}
-                >
-                  {u.username}
-                  {currentUser?.id === u.id && <span style={styles.tag}>Active</span>}
-                </button>
-              ))}
-            </div>
-            <button onClick={onClose} style={styles.closeButton}>
-              Close
-            </button>
-          </>
         )}
       </div>
     </div>
@@ -141,37 +146,16 @@ const styles = {
     marginTop: 0,
     marginBottom: "1rem",
   },
-  switchingTo: {
+  signedInAs: {
     marginTop: 0,
-    marginBottom: "1rem",
+    marginBottom: "1.5rem",
     color: "var(--ink-soft)",
   },
-  list: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "0.5rem",
-    maxHeight: "300px",
-    overflowY: "auto",
-  },
-  userItem: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "0.75rem 1rem",
-    border: "1px solid var(--border)",
-    borderRadius: "8px",
-    background: "var(--bg)",
-    color: "var(--ink)",
-    cursor: "pointer",
-    fontSize: "1rem",
-    textAlign: "left",
-  },
-  userItemActive: {
-    borderColor: "var(--accent)",
-  },
-  tag: {
-    fontSize: "0.75rem",
-    color: "var(--accent)",
+  hint: {
+    marginTop: 0,
+    marginBottom: "1rem",
+    fontSize: "0.85rem",
+    color: "var(--ink-soft)",
   },
   input: {
     width: "100%",
@@ -209,7 +193,7 @@ const styles = {
     minHeight: "auto",
     lineHeight: 1,
   },
-  saveButton: {
+  actionButton: {
     width: "100%",
     padding: "0.8rem",
     border: "none",
@@ -220,10 +204,22 @@ const styles = {
     fontSize: "1rem",
     marginBottom: "0.5rem",
   },
+  logoutButton: {
+    width: "100%",
+    padding: "0.8rem",
+    border: "1px solid var(--border)",
+    borderRadius: "8px",
+    background: "transparent",
+    color: "#B23A3A",
+    cursor: "pointer",
+    fontSize: "1rem",
+    marginBottom: "0.5rem",
+  },
   error: {
     color: "#B23A3A",
     fontSize: "0.85rem",
     marginBottom: "0.75rem",
+    fontWeight: "bold",
   },
   closeButton: {
     width: "100%",

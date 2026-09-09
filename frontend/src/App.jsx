@@ -131,6 +131,10 @@ export default function App() {
         <SwitchUser
           currentUser={user}
           onSelectUser={handleSwitch}
+          onLogout={() => {
+            setShowSwitch(false);
+            handleLogout();
+          }}
           onClose={() => setShowSwitch(false)}
         />
       )}
